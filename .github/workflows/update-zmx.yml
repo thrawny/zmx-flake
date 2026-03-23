@@ -68,7 +68,9 @@ jobs:
 
       - name: Build and push to Cachix
         if: steps.check.outputs.needs_update == 'true' || inputs.force
-        run: nix build .#zmx
+        run: |
+          nix build .#zmx
+          nix build .#zmx --print-out-paths | cachix push zmx
 
       - name: Commit changes
         if: steps.check.outputs.needs_update == 'true'
