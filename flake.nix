@@ -40,11 +40,27 @@
           env = zig2nix.outputs.zig-env.${system} {
             zig = zig2nix.outputs.packages.${system}.zig-0_15_2;
           };
-          zmx = env.package {
+          zmx-unwrapped = env.package {
             src = zmx-src;
             zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
             zigPreferMusl = true;
           };
+          zmx =
+            pkgs.runCommand "zmx-${zmx-unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; }
+              ''
+                mkdir -p $out/bin
+                ln -s ${zmx-unwrapped}/bin/zmx $out/bin/zmx
+
+                echo '#compdef zmx' > _zmx
+                $out/bin/zmx completions zsh >> _zmx
+                installShellCompletion --zsh _zmx
+
+                $out/bin/zmx completions bash > zmx.bash
+                installShellCompletion --bash zmx.bash
+
+                $out/bin/zmx completions fish > zmx.fish
+                installShellCompletion --fish zmx.fish
+              '';
         in
         {
           packages = {
