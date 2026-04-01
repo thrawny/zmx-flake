@@ -64,13 +64,13 @@ jobs:
         if: steps.check.outputs.needs_update == 'true'
         run: |
           sed -i "s|github:neurosnap/zmx/${{ steps.check.outputs.current }}|github:neurosnap/zmx/${{ steps.check.outputs.latest }}|" flake.nix
-          nix flake update zmx-src
+          nix flake update zmx-src zmx-src-main
 
       - name: Build and push to Cachix
         if: steps.check.outputs.needs_update == 'true' || inputs.force
         run: |
-          nix build .#zmx
           nix build .#zmx --print-out-paths | cachix push zmx
+          nix build .#zmx-main --print-out-paths | cachix push zmx
 
       - name: Commit changes
         if: steps.check.outputs.needs_update == 'true'
