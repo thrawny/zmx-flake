@@ -36,7 +36,8 @@
     "root": {
       "inputs": {
         "zig2nix": "zig2nix",
-        "zmx-src": "zmx-src"
+        "zmx-src": "zmx-src",
+        "zmx-src-main": "zmx-src-main"
       }
     },
     "systems": {
@@ -86,6 +87,22 @@
       "original": {
         "owner": "neurosnap",
         "ref": "v0.4.2",
+        "repo": "zmx",
+        "type": "github"
+      }
+    },
+    "zmx-src-main": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1774967415,
+        "narHash": "sha256-o0GxXdOq1yGirzcfYkuAYHg1x5zo5yZPDAMBIjQy+iE=",
+        "owner": "neurosnap",
+        "repo": "zmx",
+        "rev": "cc33276872eff7831e308a89384f66a0e14731ae",
+        "type": "github"
+      },
+      "original": {
+        "owner": "neurosnap",
         "repo": "zmx",
         "type": "github"
       }

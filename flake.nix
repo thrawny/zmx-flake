@@ -7,10 +7,19 @@
       url = "github:neurosnap/zmx/v0.4.2";
       flake = false;
     };
+    zmx-src-main = {
+      url = "github:neurosnap/zmx";
+      flake = false;
+    };
   };
 
   outputs =
-    { zig2nix, zmx-src, ... }:
+    {
+      zig2nix,
+      zmx-src,
+      zmx-src-main,
+      ...
+    }:
     let
       inherit (zig2nix.inputs) flake-utils nixpkgs;
 
@@ -40,16 +49,20 @@
           env = zig2nix.outputs.zig-env.${system} {
             zig = zig2nix.outputs.packages.${system}.zig-0_15_2;
           };
-          zmx-unwrapped = env.package {
-            src = zmx-src;
-            zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
-            zigPreferMusl = true;
-          };
-          zmx =
-            pkgs.runCommand "zmx-${zmx-unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; }
+
+          mkZmx =
+            src:
+            let
+              unwrapped = env.package {
+                inherit src;
+                zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
+                zigPreferMusl = true;
+              };
+            in
+            pkgs.runCommand "zmx-${unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; }
               ''
                 mkdir -p $out/bin
-                ln -s ${zmx-unwrapped}/bin/zmx $out/bin/zmx
+                ln -s ${unwrapped}/bin/zmx $out/bin/zmx
 
                 echo '#compdef zmx' > _zmx
                 $out/bin/zmx completions zsh >> _zmx
@@ -61,10 +74,13 @@
                 $out/bin/zmx completions fish > zmx.fish
                 installShellCompletion --fish zmx.fish
               '';
+
+          zmx = mkZmx zmx-src;
+          zmx-main = mkZmx zmx-src-main;
         in
         {
           packages = {
-            inherit zmx;
+            inherit zmx zmx-main;
             default = zmx;
           };
 
