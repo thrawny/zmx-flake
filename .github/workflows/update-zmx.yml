@@ -14,8 +14,16 @@ permissions:
   contents: write
 
 jobs:
-  update:
+  detect-updates:
     runs-on: ubuntu-latest
+    outputs:
+      release_needs_update: ${{ steps.check-release.outputs.needs_update }}
+      release_current: ${{ steps.check-release.outputs.current }}
+      release_latest: ${{ steps.check-release.outputs.latest }}
+      main_needs_update: ${{ steps.check-main.outputs.needs_update }}
+      main_current: ${{ steps.check-main.outputs.current }}
+      main_latest: ${{ steps.check-main.outputs.latest }}
+      should_run: ${{ steps.should-run.outputs.value }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,46 +72,92 @@ jobs:
             echo "needs_update=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Decide whether to build
+        id: should-run
+        run: |
+          if [ "${{ steps.check-release.outputs.needs_update }}" = "true" ] || \
+             [ "${{ steps.check-main.outputs.needs_update }}" = "true" ] || \
+             [ "${{ inputs.force }}" = "true" ]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-push:
+    needs: detect-updates
+    if: needs.detect-updates.outputs.should_run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-14
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Enable unprivileged user namespaces
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
+        if: matrix.os == 'ubuntu-latest'
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Install Nix
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
         uses: cachix/install-nix-action@v31
 
       - name: Setup Cachix
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
         uses: cachix/cachix-action@v15
         with:
           name: zmx
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Update release in flake.nix
-        if: steps.check-release.outputs.needs_update == 'true'
+        if: needs.detect-updates.outputs.release_needs_update == 'true'
         run: |
-          sed -i "s|github:neurosnap/zmx/${{ steps.check-release.outputs.current }}|github:neurosnap/zmx/${{ steps.check-release.outputs.latest }}|" flake.nix
+          sed -i.bak "s|github:neurosnap/zmx/${{ needs.detect-updates.outputs.release_current }}|github:neurosnap/zmx/${{ needs.detect-updates.outputs.release_latest }}|" flake.nix
+          rm -f flake.nix.bak
           nix flake update zmx-src
 
       - name: Update main in flake.lock
-        if: steps.check-main.outputs.needs_update == 'true' || inputs.force
+        if: needs.detect-updates.outputs.main_needs_update == 'true' || inputs.force
         run: nix flake update zmx-src-main
 
       - name: Build and push to Cachix
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
         run: |
           nix build .#zmx --print-out-paths | cachix push zmx
           nix build .#zmx-main --print-out-paths | cachix push zmx
 
+  commit-changes:
+    needs:
+      - detect-updates
+      - build-and-push
+    if: needs.detect-updates.outputs.release_needs_update == 'true' || needs.detect-updates.outputs.main_needs_update == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Update release in flake.nix
+        if: needs.detect-updates.outputs.release_needs_update == 'true'
+        run: |
+          sed -i "s|github:neurosnap/zmx/${{ needs.detect-updates.outputs.release_current }}|github:neurosnap/zmx/${{ needs.detect-updates.outputs.release_latest }}|" flake.nix
+          nix flake update zmx-src
+
+      - name: Update main in flake.lock
+        if: needs.detect-updates.outputs.main_needs_update == 'true'
+        run: nix flake update zmx-src-main
+
       - name: Commit changes
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: >-
             chore: update zmx
-            ${{ steps.check-release.outputs.needs_update == 'true'
-              && format('(release {0})', steps.check-release.outputs.latest)
+            ${{ needs.detect-updates.outputs.release_needs_update == 'true'
+              && format('(release {0})', needs.detect-updates.outputs.release_latest)
               || '' }}
-            ${{ steps.check-main.outputs.needs_update == 'true'
-              && format('(main {0})', steps.check-main.outputs.latest)
+            ${{ needs.detect-updates.outputs.main_needs_update == 'true'
+              && format('(main {0})', needs.detect-updates.outputs.main_latest)
               || '' }}

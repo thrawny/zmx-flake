@@ -41,6 +41,7 @@
       [
         "x86_64-linux"
         "aarch64-linux"
+        "aarch64-darwin"
       ]
       (
         system:
@@ -56,7 +57,7 @@
               unwrapped = env.package {
                 inherit src;
                 zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
-                zigPreferMusl = true;
+                zigPreferMusl = pkgs.stdenv.hostPlatform.isLinux;
               };
             in
             pkgs.runCommand "zmx-${unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; }
