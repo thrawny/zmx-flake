@@ -1,6 +1,10 @@
 {
   description = "Nix flake for zmx - session persistence for terminal processes";
 
+  nixConfig = {
+    allow-import-from-derivation = true;
+  };
+
   inputs = {
     zig2nix.url = "github:Cloudef/zig2nix";
     zmx-src = {
@@ -54,10 +58,93 @@
           mkZmx =
             src:
             let
+              deps = env.deriveLockFile "${src}/build.zig.zon2json-lock" {
+                inherit (env) zig;
+                name = "zmx-dependencies";
+              };
+              patchedDeps =
+                if pkgs.stdenv.hostPlatform.isDarwin then
+                  pkgs.runCommand "zmx-dependencies-patched" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+                    mkdir -p $out
+                    cp -RL ${deps}/. $out/
+                    chmod -R +w $out
+
+                    python3 <<'PY'
+                    import os
+                    from pathlib import Path
+
+                    build_zig = next(Path(os.environ["out"]).glob("ghostty-*/build.zig"))
+                    data = build_zig.read_text()
+
+                    data = data.replace(
+                        """    // macOS only artifacts. These will error if they're initialized for\n    // other targets.\n    if (config.target.result.os.tag.isDarwin()) {\n""",
+                        """    // macOS only artifacts. These are only needed when producing the\n    // Darwin library/app artifacts themselves.\n    if (config.target.result.os.tag.isDarwin() and (config.emit_xcframework or config.emit_macos_app)) {\n""",
+                    )
+                    data = data.replace(
+                        """        // On macOS we can run the macOS app. For \"run\" we always force\n        // a native-only build so that we can run as quickly as possible.\n        if (config.target.result.os.tag.isDarwin()) {\n""",
+                        """        // On macOS we can run the macOS app. For \"run\" we always force\n        // a native-only build so that we can run as quickly as possible.\n        if (config.target.result.os.tag.isDarwin() and (config.emit_xcframework or config.emit_macos_app)) {\n""",
+                    )
+
+                    build_zig.write_text(data)
+                    PY
+                  ''
+                else
+                  null;
+
               unwrapped = env.package {
                 inherit src;
                 zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
                 zigPreferMusl = pkgs.stdenv.hostPlatform.isLinux;
+                nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+                  pkgs.xcbuild
+                  pkgs.python3
+                ];
+                buildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+                  pkgs.apple-sdk
+                ];
+                postPatch = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+python3 <<'PY'
+from pathlib import Path
+
+p = Path('build.zig')
+data = p.read_text()
+data = data.replace(
+    '''    if (b.lazyDependency("ghostty", .{
+        .target = target,
+        .optimize = optimize,
+    })) |dep| {
+''',
+    '''    if (b.lazyDependency("ghostty", .{
+        .target = target,
+        .optimize = optimize,
+        .@"emit-xcframework" = false,
+        .@"emit-macos-app" = false,
+    })) |dep| {
+''',
+    1,
+)
+data = data.replace(
+    '''        if (b.lazyDependency("ghostty", .{
+            .target = resolved,
+            .optimize = .ReleaseSafe,
+        })) |dep| {
+''',
+    '''        if (b.lazyDependency("ghostty", .{
+            .target = resolved,
+            .optimize = .ReleaseSafe,
+            .@"emit-xcframework" = false,
+            .@"emit-macos-app" = false,
+        })) |dep| {
+''',
+    1,
+)
+p.write_text(data)
+PY
+                '';
+                preBuild = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+                  rm -f "$ZIG_GLOBAL_CACHE_DIR"/p
+                  ln -s ${patchedDeps} "$ZIG_GLOBAL_CACHE_DIR"/p
+                '';
               };
             in
             pkgs.runCommand "zmx-${unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; }
