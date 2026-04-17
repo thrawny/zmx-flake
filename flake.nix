@@ -4,7 +4,7 @@
   inputs = {
     zig2nix.url = "github:Cloudef/zig2nix";
     zmx-src = {
-      url = "github:neurosnap/zmx/v0.4.2";
+      url = "github:neurosnap/zmx/v0.5.0";
       flake = false;
     };
     zmx-src-main = {
