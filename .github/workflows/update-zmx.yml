@@ -99,6 +99,9 @@ jobs:
         if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           commit_message: >-
             chore: update zmx
             ${{ steps.check-release.outputs.needs_update == 'true'
