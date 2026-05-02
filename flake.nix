@@ -41,6 +41,8 @@
       [
         "x86_64-linux"
         "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
       ]
       (
         system:
@@ -50,6 +52,33 @@
             zig = zig2nix.outputs.packages.${system}.zig-0_15_2;
           };
 
+          # On macOS, zig 0.15 auto-detects the native macOS version (26+) and targets
+          # arm64-macos in its linker searches. Modern macOS SDKs only ship arm64e-macos
+          # TBD stubs, so zig's linker can't resolve symbols for arm64-macos targets.
+          # The nixpkgs apple-sdk (14.4) still has arm64-macos stubs, so we point zig
+          # at it by wrapping xcrun/xcode-select (which zig uses for SDK discovery) and
+          # setting SDKROOT. The ghostty dependency also calls xcrun via apple_sdk.addPaths.
+          darwinSdkAttrs = pkgs.lib.optionalAttrs pkgs.stdenv.isDarwin (
+            let
+              sdkRoot = pkgs.apple-sdk.sdkroot;
+              xcrunWrapper = pkgs.writeScriptBin "xcrun" ''
+                #!/bin/sh
+                echo "${sdkRoot}"
+              '';
+              xcodeselectWrapper = pkgs.writeScriptBin "xcode-select" ''
+                #!/bin/sh
+                echo "${sdkRoot}"
+              '';
+            in
+            {
+              nativeBuildInputs = [
+                xcrunWrapper
+                xcodeselectWrapper
+              ];
+              SDKROOT = sdkRoot;
+            }
+          );
+
           mkZmx =
             src: packageAttrs:
             let
@@ -57,8 +86,9 @@
                 {
                   inherit src;
                   zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
-                  zigPreferMusl = true;
+                  zigPreferMusl = pkgs.stdenv.hostPlatform.isLinux;
                 }
+                // darwinSdkAttrs
                 // packageAttrs
               );
             in
@@ -109,5 +139,7 @@
     // {
       nixosModules.default = cacheModule;
       nixosModules.cache = cacheModule;
+      darwinModules.default = cacheModule;
+      darwinModules.cache = cacheModule;
     };
 }
