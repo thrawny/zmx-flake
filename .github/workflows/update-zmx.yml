@@ -14,8 +14,12 @@ permissions:
   contents: write
 
 jobs:
-  update:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      needs_build: ${{ steps.summary.outputs.needs_build }}
+      needs_commit: ${{ steps.summary.outputs.needs_commit }}
+      commit_message: ${{ steps.summary.outputs.commit_message }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,20 +68,50 @@ jobs:
             echo "needs_update=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Summarize update
+        id: summary
+        env:
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force }}
+          RELEASE_NEEDS_UPDATE: ${{ steps.check-release.outputs.needs_update }}
+          RELEASE_LATEST: ${{ steps.check-release.outputs.latest }}
+          MAIN_NEEDS_UPDATE: ${{ steps.check-main.outputs.needs_update }}
+          MAIN_LATEST: ${{ steps.check-main.outputs.latest }}
+        run: |
+          set -euo pipefail
+
+          needs_build=false
+          needs_commit=false
+          message="chore: update zmx"
+
+          if [ "$RELEASE_NEEDS_UPDATE" = "true" ]; then
+            needs_build=true
+            needs_commit=true
+            message="$message (release $RELEASE_LATEST)"
+          fi
+
+          if [ "$MAIN_NEEDS_UPDATE" = "true" ]; then
+            needs_build=true
+            needs_commit=true
+            message="$message (main $MAIN_LATEST)"
+          fi
+
+          if [ "$FORCE" = "true" ]; then
+            needs_build=true
+          fi
+
+          {
+            echo "needs_build=$needs_build"
+            echo "needs_commit=$needs_commit"
+            echo "commit_message=$message"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Enable unprivileged user namespaces
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
+        if: steps.summary.outputs.needs_build == 'true'
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Install Nix
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
+        if: steps.summary.outputs.needs_build == 'true'
         uses: cachix/install-nix-action@v31
-
-      - name: Setup Cachix
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
-        uses: cachix/cachix-action@v15
-        with:
-          name: zmx
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Update release in flake.nix
         if: steps.check-release.outputs.needs_update == 'true'
@@ -86,28 +120,133 @@ jobs:
           nix flake update zmx-src
 
       - name: Update main in flake.lock
-        if: steps.check-main.outputs.needs_update == 'true' || inputs.force
+        if: steps.check-main.outputs.needs_update == 'true'
         run: nix flake update zmx-src-main
 
-      - name: Build and push to Cachix
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
+      - name: Regenerate Zig dependency locks
+        if: steps.summary.outputs.needs_build == 'true'
+        env:
+          REGEN_RELEASE: ${{ steps.check-release.outputs.needs_update }}
+          REGEN_MAIN: ${{ steps.check-main.outputs.needs_update }}
+        run: |
+          set -euo pipefail
+
+          zig2nix_rev=$(jq -r '.nodes.zig2nix.locked.rev' flake.lock)
+          zig2nix_ref="github:Cloudef/zig2nix/$zig2nix_rev"
+
+          lock_zon() {
+            input="$1"
+            output="$2"
+            tmpdir=$(mktemp -d)
+            cp "$input/build.zig.zon" "$tmpdir/build.zig.zon"
+            (
+              cd "$tmpdir"
+              nix run "$zig2nix_ref" -- zon2lock build.zig.zon
+            )
+            cp "$tmpdir/build.zig.zon2json-lock" "$output"
+          }
+
+          if [ "$REGEN_RELEASE" = "true" ]; then
+            release_src=$(nix eval --raw --impure --expr 'let flake = builtins.getFlake (toString ./.) ; in flake.inputs.zmx-src.outPath')
+            lock_zon "$release_src" build.zig.zon2json-lock-v0.5.0
+          fi
+
+          if [ "$REGEN_MAIN" = "true" ]; then
+            main_src=$(nix eval --raw --impure --expr 'let flake = builtins.getFlake (toString ./.) ; in flake.inputs.zmx-src-main.outPath')
+            lock_zon "$main_src" build.zig.zon2json-lock
+          fi
+
+      - name: Upload update candidate
+        if: steps.summary.outputs.needs_build == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: zmx-update-candidate
+          if-no-files-found: error
+          path: |
+            flake.nix
+            flake.lock
+            build.zig.zon2json-lock
+            build.zig.zon2json-lock-v0.5.0
+
+  build-linux:
+    needs: prepare
+    if: needs.prepare.outputs.needs_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download update candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: zmx-update-candidate
+          path: .
+
+      - name: Enable unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: zmx
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build and push Linux packages
         run: |
           set -euo pipefail
           nix build .#zmx --print-out-paths | cachix push zmx
           nix build .#zmx-main --print-out-paths | cachix push zmx
 
+  build-darwin:
+    needs: prepare
+    if: needs.prepare.outputs.needs_build == 'true'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download update candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: zmx-update-candidate
+          path: .
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: zmx
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Build and push Darwin packages
+        run: |
+          set -euo pipefail
+          nix build .#zmx --print-out-paths | cachix push zmx
+          nix build .#zmx-main --print-out-paths | cachix push zmx
+
+  commit-update:
+    needs:
+      - prepare
+      - build-linux
+      - build-darwin
+    if: needs.prepare.outputs.needs_commit == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download update candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: zmx-update-candidate
+          path: .
+
       - name: Commit changes
-        if: success() && (steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true')
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_user_name: github-actions[bot]
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
           commit_author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          commit_message: >-
-            chore: update zmx
-            ${{ steps.check-release.outputs.needs_update == 'true'
-              && format('(release {0})', steps.check-release.outputs.latest)
-              || '' }}
-            ${{ steps.check-main.outputs.needs_update == 'true'
-              && format('(main {0})', steps.check-main.outputs.latest)
-              || '' }}
+          commit_message: ${{ needs.prepare.outputs.commit_message }}
