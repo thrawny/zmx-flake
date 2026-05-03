@@ -1,0 +1,26 @@
+name: Darwin
+
+on:
+  push:
+    branches:
+      - darwin-native-builds
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            accept-flake-config = true
+
+      - name: Build native Darwin packages
+        run: |
+          nix build .#zmx .#zmx-main --print-out-paths --no-link

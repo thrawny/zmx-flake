@@ -41,6 +41,8 @@
       [
         "x86_64-linux"
         "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
       ]
       (
         system:
@@ -77,16 +79,66 @@
               installShellCompletion --fish zmx.fish
             '';
 
+          mkZmxCross =
+            src: packageAttrs: completionsFrom:
+            let
+              unwrapped = env.package (
+                {
+                  inherit src;
+                  zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
+                }
+                // packageAttrs
+              );
+            in
+            pkgs.runCommand "zmx-${unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; } ''
+              mkdir -p $out/bin
+              ln -s ${unwrapped}/bin/zmx $out/bin/zmx
+
+              echo '#compdef zmx' > _zmx
+              ${completionsFrom}/bin/zmx completions zsh >> _zmx
+              installShellCompletion --zsh _zmx
+
+              ${completionsFrom}/bin/zmx completions bash > zmx.bash
+              installShellCompletion --bash zmx.bash
+
+              ${completionsFrom}/bin/zmx completions fish > zmx.fish
+              installShellCompletion --fish zmx.fish
+            '';
+
           zmx = mkZmx zmx-src {
             zigBuildZonLock = ./build.zig.zon2json-lock-v0.5.0;
           };
           zmx-main = mkZmx zmx-src-main {
             zigBuildZonLock = ./build.zig.zon2json-lock;
           };
+
+          zmx-darwin-aarch64 = mkZmxCross zmx-src {
+            zigBuildZonLock = ./build.zig.zon2json-lock-v0.5.0;
+            zigTarget = "aarch64-macos";
+          } zmx;
+          zmx-darwin-x86_64 = mkZmxCross zmx-src {
+            zigBuildZonLock = ./build.zig.zon2json-lock-v0.5.0;
+            zigTarget = "x86_64-macos";
+          } zmx;
+          zmx-main-darwin-aarch64 = mkZmxCross zmx-src-main {
+            zigBuildZonLock = ./build.zig.zon2json-lock;
+            zigTarget = "aarch64-macos";
+          } zmx-main;
+          zmx-main-darwin-x86_64 = mkZmxCross zmx-src-main {
+            zigBuildZonLock = ./build.zig.zon2json-lock;
+            zigTarget = "x86_64-macos";
+          } zmx-main;
         in
         {
           packages = {
-            inherit zmx zmx-main;
+            inherit
+              zmx
+              zmx-main
+              zmx-darwin-aarch64
+              zmx-darwin-x86_64
+              zmx-main-darwin-aarch64
+              zmx-main-darwin-x86_64
+              ;
             default = zmx;
           };
 
