@@ -71,6 +71,8 @@
               '';
             in
             {
+              glibc = null;
+              musl = null;
               nativeBuildInputs = [
                 xcrunWrapper
                 xcodeselectWrapper
