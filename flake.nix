@@ -96,20 +96,25 @@
                 // packageAttrs
               );
             in
-            pkgs.runCommand unwrapped.name { nativeBuildInputs = [ pkgs.installShellFiles ]; } ''
-              mkdir -p $out/bin
-              ln -s ${unwrapped}/bin/zmx $out/bin/zmx
+            pkgs.runCommand unwrapped.name
+              {
+                nativeBuildInputs = [ pkgs.installShellFiles ];
+                meta.mainProgram = "zmx";
+              }
+              ''
+                mkdir -p $out/bin
+                ln -s ${unwrapped}/bin/zmx $out/bin/zmx
 
-              echo '#compdef zmx' > _zmx
-              $out/bin/zmx completions zsh >> _zmx
-              installShellCompletion --zsh _zmx
+                echo '#compdef zmx' > _zmx
+                $out/bin/zmx completions zsh >> _zmx
+                installShellCompletion --zsh _zmx
 
-              $out/bin/zmx completions bash > zmx.bash
-              installShellCompletion --bash zmx.bash
+                $out/bin/zmx completions bash > zmx.bash
+                installShellCompletion --bash zmx.bash
 
-              $out/bin/zmx completions fish > zmx.fish
-              installShellCompletion --fish zmx.fish
-            '';
+                $out/bin/zmx completions fish > zmx.fish
+                installShellCompletion --fish zmx.fish
+              '';
 
           zmx = mkZmx zmx-src {
             zigBuildZonLock = ./build.zig.zon2json-lock-v0.5.0;
