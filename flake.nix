@@ -36,6 +36,8 @@
             };
           };
         };
+
+      shortRev = rev: builtins.substring 0 9 rev;
     in
     flake-utils.lib.eachSystem
       [
@@ -94,7 +96,7 @@
                 // packageAttrs
               );
             in
-            pkgs.runCommand "zmx-${unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; } ''
+            pkgs.runCommand unwrapped.name { nativeBuildInputs = [ pkgs.installShellFiles ]; } ''
               mkdir -p $out/bin
               ln -s ${unwrapped}/bin/zmx $out/bin/zmx
 
@@ -113,6 +115,8 @@
             zigBuildZonLock = ./build.zig.zon2json-lock-v0.5.0;
           };
           zmx-main = mkZmx zmx-src-main {
+            pname = "zmx-main";
+            version = shortRev zmx-src-main.rev;
             zigBuildZonLock = ./build.zig.zon2json-lock;
           };
         in
