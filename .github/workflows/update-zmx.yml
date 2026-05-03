@@ -199,6 +199,12 @@ jobs:
           nix build .#zmx --print-out-paths | cachix push zmx
           nix build .#zmx-main --print-out-paths | cachix push zmx
 
+      - name: Smoke test Linux packages
+        run: |
+          set -euo pipefail
+          nix run .#zmx -- --version
+          nix run .#zmx-main -- --version
+
   build-darwin:
     needs: prepare
     if: needs.prepare.outputs.needs_build == 'true'
@@ -226,6 +232,12 @@ jobs:
           set -euo pipefail
           nix build .#zmx --print-out-paths | cachix push zmx
           nix build .#zmx-main --print-out-paths | cachix push zmx
+
+      - name: Smoke test Darwin packages
+        run: |
+          set -euo pipefail
+          nix run .#zmx -- --version
+          nix run .#zmx-main -- --version
 
   commit-update:
     needs:
