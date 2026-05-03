@@ -92,11 +92,12 @@ jobs:
       - name: Build and push to Cachix
         if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true' || inputs.force
         run: |
+          set -euo pipefail
           nix build .#zmx --print-out-paths | cachix push zmx
           nix build .#zmx-main --print-out-paths | cachix push zmx
 
       - name: Commit changes
-        if: steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true'
+        if: success() && (steps.check-release.outputs.needs_update == 'true' || steps.check-main.outputs.needs_update == 'true')
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_user_name: github-actions[bot]

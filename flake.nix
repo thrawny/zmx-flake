@@ -51,32 +51,38 @@
           };
 
           mkZmx =
-            src:
+            src: packageAttrs:
             let
-              unwrapped = env.package {
-                inherit src;
-                zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
-                zigPreferMusl = true;
-              };
+              unwrapped = env.package (
+                {
+                  inherit src;
+                  zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
+                  zigPreferMusl = true;
+                }
+                // packageAttrs
+              );
             in
-            pkgs.runCommand "zmx-${unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; }
-              ''
-                mkdir -p $out/bin
-                ln -s ${unwrapped}/bin/zmx $out/bin/zmx
+            pkgs.runCommand "zmx-${unwrapped.version}" { nativeBuildInputs = [ pkgs.installShellFiles ]; } ''
+              mkdir -p $out/bin
+              ln -s ${unwrapped}/bin/zmx $out/bin/zmx
 
-                echo '#compdef zmx' > _zmx
-                $out/bin/zmx completions zsh >> _zmx
-                installShellCompletion --zsh _zmx
+              echo '#compdef zmx' > _zmx
+              $out/bin/zmx completions zsh >> _zmx
+              installShellCompletion --zsh _zmx
 
-                $out/bin/zmx completions bash > zmx.bash
-                installShellCompletion --bash zmx.bash
+              $out/bin/zmx completions bash > zmx.bash
+              installShellCompletion --bash zmx.bash
 
-                $out/bin/zmx completions fish > zmx.fish
-                installShellCompletion --fish zmx.fish
-              '';
+              $out/bin/zmx completions fish > zmx.fish
+              installShellCompletion --fish zmx.fish
+            '';
 
-          zmx = mkZmx zmx-src;
-          zmx-main = mkZmx zmx-src-main;
+          zmx = mkZmx zmx-src {
+            zigBuildZonLock = ./build.zig.zon2json-lock-v0.5.0;
+          };
+          zmx-main = mkZmx zmx-src-main {
+            zigBuildZonLock = ./build.zig.zon2json-lock;
+          };
         in
         {
           packages = {
