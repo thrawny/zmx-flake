@@ -42,6 +42,7 @@ To use upstream `main` instead, replace `zmx` with `zmx-main`.
 ## Cache
 
 The binary cache is enabled by default by the provided NixOS/nix-darwin module.
+CI builds and pushes native `x86_64-linux` and `aarch64-darwin` packages to the cache.
 
 If you want to opt out:
 
@@ -50,9 +51,6 @@ If you want to opt out:
   zmx-flake.cache.enable = false;
 }
 ```
-
-> **Note:** The cache currently only contains Linux builds. Darwin users will
-> build from source until Darwin CI is wired up.
 
 ## Supported platforms
 
