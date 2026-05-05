@@ -127,7 +127,6 @@ jobs:
         if: steps.summary.outputs.needs_build == 'true'
         env:
           REGEN_RELEASE: ${{ steps.check-release.outputs.needs_update }}
-          REGEN_MAIN: ${{ steps.check-main.outputs.needs_update }}
         run: |
           set -euo pipefail
 
@@ -151,10 +150,6 @@ jobs:
             lock_zon "$release_src" build.zig.zon2json-lock-v0.5.0
           fi
 
-          if [ "$REGEN_MAIN" = "true" ]; then
-            main_src=$(nix eval --raw --impure --expr 'let flake = builtins.getFlake (toString ./.) ; in flake.inputs.zmx-src-main.outPath')
-            lock_zon "$main_src" build.zig.zon2json-lock
-          fi
 
       - name: Upload update candidate
         if: steps.summary.outputs.needs_build == 'true'
@@ -165,7 +160,6 @@ jobs:
           path: |
             flake.nix
             flake.lock
-            build.zig.zon2json-lock
             build.zig.zon2json-lock-v0.5.0
 
   build-linux:

@@ -122,7 +122,6 @@
           zmx-main = mkZmx zmx-src-main {
             pname = "zmx-main";
             version = shortRev zmx-src-main.rev;
-            zigBuildZonLock = ./build.zig.zon2json-lock;
           };
         in
         {
