@@ -4,7 +4,7 @@
   inputs = {
     zig2nix.url = "github:Cloudef/zig2nix";
     zmx-src = {
-      url = "github:neurosnap/zmx/v0.5.0";
+      url = "github:neurosnap/zmx/v0.6.0";
       flake = false;
     };
     zmx-src-main = {
@@ -116,9 +116,7 @@
                 installShellCompletion --fish zmx.fish
               '';
 
-          zmx = mkZmx zmx-src {
-            zigBuildZonLock = ./build.zig.zon2json-lock-v0.5.0;
-          };
+          zmx = mkZmx zmx-src { };
           zmx-main = mkZmx zmx-src-main {
             pname = "zmx-main";
             version = shortRev zmx-src-main.rev;
