@@ -80,6 +80,11 @@
                 xcodeselectWrapper
               ];
               SDKROOT = sdkRoot;
+              zigTarget =
+                if pkgs.stdenv.hostPlatform.isAarch64 then
+                  "aarch64-macos.13.0"
+                else
+                  "x86_64-macos.13.0";
             }
           );
 

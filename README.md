@@ -42,7 +42,7 @@ To use upstream `main` instead, replace `zmx` with `zmx-main`.
 ## Cache
 
 The binary cache is enabled by default by the provided NixOS/nix-darwin module.
-CI builds and pushes native `x86_64-linux` packages for both `zmx` and `zmx-main`, plus native `aarch64-darwin` packages for the default release package.
+CI builds and pushes native `x86_64-linux` and `aarch64-darwin` packages to the cache.
 
 If you want to opt out:
 
