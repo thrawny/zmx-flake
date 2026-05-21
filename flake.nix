@@ -76,6 +76,7 @@
               glibc = null;
               musl = null;
               nativeBuildInputs = [
+                pkgs.python3
                 xcrunWrapper
                 xcodeselectWrapper
               ];
