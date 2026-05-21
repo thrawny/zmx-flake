@@ -85,6 +85,12 @@
                   "aarch64-macos.13.0"
                 else
                   "x86_64-macos.13.0";
+              postPatch = ''
+                substituteInPlace build.zig \
+                  --replace-fail "        exe.linkLibC();" "        if (target.result.os.tag == .macos) exe.use_lld = false;\n        exe.linkLibC();" \
+                  --replace-fail "        exe_check.linkLibC();" "        if (target.result.os.tag == .macos) exe_check.use_lld = false;\n        exe_check.linkLibC();" \
+                  --replace-fail "            release_exe.linkLibC();" "            if (resolved.result.os.tag == .macos) release_exe.use_lld = false;\n            release_exe.linkLibC();"
+              '';
             }
           );
 
