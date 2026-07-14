@@ -135,6 +135,8 @@
                 mkdir -p $out/bin
                 ln -s ${unwrapped}/bin/zmx $out/bin/zmx
 
+                export ZMX_DIR="$TMPDIR/zmx"
+
                 echo '#compdef zmx' > _zmx
                 $out/bin/zmx completions zsh >> _zmx
                 installShellCompletion --zsh _zmx
