@@ -124,6 +124,15 @@
                     1,
                 )
                 path.write_text(text)
+
+                path = Path("src/main.zig")
+                text = path.read_text()
+                text = text.replace(
+                    "std.Io.File.Permissions.fromMode(cfg.log_mode)",
+                    "std.Io.File.Permissions.fromMode(@intCast(cfg.log_mode))",
+                    1,
+                )
+                path.write_text(text)
                 PY
               '';
             }
