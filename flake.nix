@@ -132,6 +132,16 @@
                     "std.Io.File.Permissions.fromMode(@intCast(cfg.log_mode))",
                     1,
                 )
+                text = text.replace(
+                    "std.Io.File.Permissions.fromMode(self.cfg.log_mode)",
+                    "std.Io.File.Permissions.fromMode(@intCast(self.cfg.log_mode))",
+                    1,
+                )
+                text = text.replace(
+                    "fn wakeSignalPipe(_: std.os.linux.SIG,",
+                    "fn wakeSignalPipe(_: lib_posix.SIG,",
+                    1,
+                )
                 path.write_text(text)
                 PY
               '';
