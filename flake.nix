@@ -50,11 +50,27 @@
         system:
         let
           pkgs = import nixpkgs { inherit system; };
-          env = zig2nix.outputs.zig-env.${system} {
-            zig = zig2nix.outputs.packages.${system}.zig-0_15_2;
-          };
+          zigVersion =
+            src:
+            let
+              zon = builtins.replaceStrings [ "\n" ] [ " " ] (builtins.readFile "${src}/build.zig.zon");
+              match = builtins.match ".*\\.minimum_zig_version = \"([^\"]+)\".*" zon;
+            in
+            if match == null then
+              throw "Could not determine minimum_zig_version from ${src}/build.zig.zon"
+            else
+              builtins.head match;
 
-          # On macOS, zig 0.15 auto-detects the native macOS version (26+) and targets
+          envFor =
+            src:
+            let
+              zigAttr = "zig-${builtins.replaceStrings [ "." ] [ "_" ] (zigVersion src)}";
+            in
+            zig2nix.outputs.zig-env.${system} {
+              zig = zig2nix.outputs.packages.${system}.${zigAttr};
+            };
+
+          # On macOS, Zig auto-detects the native macOS version (26+) and targets
           # arm64-macos in its linker searches. Modern macOS SDKs only ship arm64e-macos
           # TBD stubs, so zig's linker can't resolve symbols for arm64-macos targets.
           # The nixpkgs apple-sdk (14.4) still has arm64-macos stubs, so we point zig
@@ -116,11 +132,18 @@
           mkZmx =
             src: zigBuildZonLock: packageAttrs:
             let
+              env = envFor src;
               unwrapped = env.package (
                 {
                   inherit src zigBuildZonLock;
                   zigBuildFlags = [ "-Doptimize=ReleaseSafe" ];
                   zigPreferMusl = pkgs.stdenv.hostPlatform.isLinux;
+                  preBuild =
+                    pkgs.lib.optionalString (pkgs.stdenv.isLinux && pkgs.lib.versionAtLeast env.zig.version "0.16")
+                      ''
+                        # Zig 0.16's build runner cannot execute zig2nix's Linux shell wrapper.
+                        export PATH="${env.zig}/bin:$PATH"
+                      '';
                 }
                 // darwinSdkAttrs
                 // packageAttrs

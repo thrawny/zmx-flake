@@ -26,8 +26,16 @@ refresh_lock() {
       cp "$source_dir/build.zig.zon2json-lock" "$tmp_dir/build.zig.zon2json-lock"
     fi
 
-    # Dependency hashes are Zig-version-specific; match the compiler in flake.nix.
-    nix run "$zig2nix_src#zon2json-lock-0_15_2" -- "$tmp_dir/build.zig.zon"
+    # Dependency hashes are Zig-version-specific; use the source's required compiler.
+    local zig_version
+    local zig_attr
+    zig_version=$(sed -n 's/^[[:space:]]*\.minimum_zig_version = "\([^"]*\)".*/\1/p' "$tmp_dir/build.zig.zon")
+    if [[ -z "$zig_version" ]]; then
+      echo "Could not determine minimum_zig_version from $source_dir/build.zig.zon" >&2
+      exit 1
+    fi
+    zig_attr=${zig_version//./_}
+    nix run "$zig2nix_src#zon2json-lock-$zig_attr" -- "$tmp_dir/build.zig.zon"
     cp "$tmp_dir/build.zig.zon2json-lock" "$destination"
   )
 }
