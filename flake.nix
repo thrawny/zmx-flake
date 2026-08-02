@@ -98,10 +98,7 @@
               ];
               SDKROOT = sdkRoot;
               zigTarget =
-                if pkgs.stdenv.hostPlatform.isAarch64 then
-                  "aarch64-macos.13.0"
-                else
-                  "x86_64-macos.13.0";
+                if pkgs.stdenv.hostPlatform.isAarch64 then "aarch64-macos.13.0" else "x86_64-macos.13.0";
               postPatch = ''
                 python3 - <<'PY'
                 from pathlib import Path
@@ -125,24 +122,21 @@
                 )
                 path.write_text(text)
 
-                path = Path("src/main.zig")
-                text = path.read_text()
-                text = text.replace(
-                    "std.Io.File.Permissions.fromMode(cfg.log_mode)",
-                    "std.Io.File.Permissions.fromMode(@intCast(cfg.log_mode))",
-                    1,
-                )
-                text = text.replace(
-                    "std.Io.File.Permissions.fromMode(self.cfg.log_mode)",
-                    "std.Io.File.Permissions.fromMode(@intCast(self.cfg.log_mode))",
-                    1,
-                )
-                text = text.replace(
-                    "fn wakeSignalPipe(_: std.os.linux.SIG,",
-                    "fn wakeSignalPipe(_: lib_posix.SIG,",
-                    1,
-                )
-                path.write_text(text)
+                replacements = {
+                    "std.Io.File.Permissions.fromMode(cfg.log_mode)":
+                        "std.Io.File.Permissions.fromMode(@intCast(cfg.log_mode))",
+                    "std.Io.File.Permissions.fromMode(self.cfg.log_mode)":
+                        "std.Io.File.Permissions.fromMode(@intCast(self.cfg.log_mode))",
+                    "fn wakeSignalPipe(_: std.os.linux.SIG,":
+                        "fn wakeSignalPipe(_: lib_posix.SIG,",
+                }
+                for path in Path("src").rglob("*.zig"):
+                    text = path.read_text()
+                    patched = text
+                    for old, new in replacements.items():
+                        patched = patched.replace(old, new)
+                    if patched != text:
+                        path.write_text(patched)
                 PY
               '';
             }

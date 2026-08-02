@@ -1,13 +1,13 @@
 {
-  "ghostty-1.3.2-dev-5UdBCwfRJAX2W3lpOWUOrkLvsqJckxucSrjECoDjq9kL": {
+  "ghostty-1.3.2-dev-5UdBCw7jLQVbzMzfCu-BNb7P4o6P3L9WjORwuelawrt6": {
     "name": "ghostty",
-    "url": "git+https://github.com/ghostty-org/ghostty.git/#15484b607eb5a518dedf1548247c923b8abaae7c",
-    "hash": "sha256-o5NvwFiJm67uAoCglCB560vnyCJ7Ntb+jgBmjtElRc8="
+    "url": "git+https://github.com/ghostty-org/ghostty/#aa21caeaa3a2feb6ef1251d20bd81b52f1da0940",
+    "hash": "sha256-zvEECFYZGNuxbemdHt0zXYW/G+sX6QvXS3MbCM19xro="
   },
-  "translate_c-0.0.0-Q_BUWj8_BwCr4na219OimiKKj4IVSq0aKtMXCQmIk4AB": {
+  "translate_c-0.0.0-Q_BUWmU6BwB_9JKG2l2W7i_mhmYWeRseTGBEHi_YlV5f": {
     "name": "translate_c",
-    "url": "https://deps.files.ghostty.org/translate_c-a916baf225a3cfc93a982225462db612604ae290.tar.gz",
-    "hash": "sha256-3jhr1WhFTCM/uU2znB/QuR9QLEeae4zo0+PYAADuBj4="
+    "url": "https://deps.files.ghostty.org/translate_c-80f8b6e4f45a303268717d8e5f4f91d7837138bb.tar.gz",
+    "hash": "sha256-SX0WUbSEe0CT3PK6bbvt2WQ6ha+j2t8Yto5MxtchslE="
   },
   "aro-0.0.0-JSD1Qk8rOQDnuVcD4jAwMpHitA6pADRKzQ7M7hKRwxvD": {
     "name": "aro",
@@ -34,10 +34,10 @@
     "url": "git+https://github.com/jacobsandlund/uucode#2826a37a4562284fdacd8fa029d49509cc9bffcd",
     "hash": "sha256-PFceLiwd1tZ9WeeikyLHGKkEZcyw3zYuFP6vzd5VXtA="
   },
-  "z2d-0.11.0-j5P_HtLzDwBGyQt49DrT0v4BuVqI_SRs6CXsuj7eBVhR": {
+  "z2d-0.12.1-j5P_Hsw8EQAKyZTQICCQnAH2xYkLDW8k9uefbsYdfPZ-": {
     "name": "z2d",
-    "url": "https://deps.files.ghostty.org/z2d-0.11.0-j5P_HtLzDwBGyQt49DrT0v4BuVqI_SRs6CXsuj7eBVhR.tar.gz",
-    "hash": "sha256-0/XD74TDovyVuTnfklhdJzfBzvoCqvs4R1SBp3Cr4cM="
+    "url": "https://deps.files.ghostty.org/z2d-7dbae85c81784dba9988320bf9543ed9a81350c8.tar.gz",
+    "hash": "sha256-amCAeIFBwJ3oTE2IBrUgSuK5WlOWkEV2OQ5UPJ5jveQ="
   },
   "zig_objc-0.0.0-Ir_Sp9gsAQCPAJc0oF5xoWePHWP6Y6tCphDeyNUThJoi": {
     "name": "zig_objc",
@@ -64,10 +64,10 @@
     "url": "git+https://github.com/rockorager/libvaxis.git#c1e1f23be38951c425cdf31af455ba23ef178940",
     "hash": "sha256-euz2ux/Cv8MPj4Cn7bsbp11XmHDL5JxuGWC6NYgLhvI="
   },
-  "gobject-0.3.1-Skun7E1KnwBGMX5nslHYG1yWHaSevywxQO8oM7tTOgIp": {
+  "gobject-0.3.2-Skun7F6HogCMynX2JqeSHS7xr-8pK4ob-qRFIcEasVi3": {
     "name": "gobject",
-    "url": "https://deps.files.ghostty.org/gobject-2026-04-23-26-1.tar.zst",
-    "hash": "sha256-EYpAieD5b8aWUusoEq4b1XagVsk72jhAkdQ8kFbRr5k="
+    "url": "https://github.com/ghostty-org/zig-gobject/releases/download/0.10.0-2026-07-28-36-1/ghostty-gobject-0.10.0-2026-07-28-36-1.tar.zst",
+    "hash": "sha256-RpusSyZqlfJjHNpz4orJyJ5KkQ9zxh4/9TXMxT88MvI="
   },
   "N-V-__8AANT61wB--nJ95Gj_ctmzAtcjloZ__hRqNw5lC1Kr": {
     "name": "bindings",
@@ -189,9 +189,9 @@
     "url": "https://deps.files.ghostty.org/NerdFontsSymbolsOnly-3.4.0.tar.gz",
     "hash": "sha256-8IMPtO+BbyeJZ8RwJCHb3lGviwvP+Xbwd+c0sLwhioo="
   },
-  "N-V-__8AALZGBAAS5NLVH-c8eC-6VtCdcH-9nUvVfUSkWS__": {
+  "N-V-__8AAGxKBAAjYkT1jYUiOZDXQuj0u34ndIjAWxiR1KX9": {
     "name": "iterm2_themes",
-    "url": "https://deps.files.ghostty.org/ghostty-themes-release-20260713-155359-c3968b3.tgz",
-    "hash": "sha256-q12fScBv32ftG3nEMIp0xbYPokMCVLRSFvap7yJ5Ra4="
+    "url": "https://deps.files.ghostty.org/ghostty-themes-release-20260720-153658-97e244c.tgz",
+    "hash": "sha256-S/O/BjvpcyyYE45MB8DM/7AQVOBecCBQBgaTM+mvOMs="
   }
 }
