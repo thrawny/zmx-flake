@@ -94,11 +94,11 @@
     "zmx-src-main": {
       "flake": false,
       "locked": {
-        "lastModified": 1786992319,
-        "narHash": "sha256-Cuwaf69d/wmfiAi86pFkXA98OrMQTg7AvGoTfUHgpr4=",
+        "lastModified": 1787099027,
+        "narHash": "sha256-uk1FF/iqpArkY1gK5wHDISUf+tDLGJQ+U6BDmiV6Nns=",
         "owner": "neurosnap",
         "repo": "zmx",
-        "rev": "a959c5a624efda2b87aa7b9d9c79500280d3e9ec",
+        "rev": "883b02d7dec89602f78a5c2dcc9dd7aac92229e4",
         "type": "github"
       },
       "original": {
